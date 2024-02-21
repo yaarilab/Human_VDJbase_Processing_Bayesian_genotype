@@ -24,11 +24,6 @@ params.First_Alignment_Collapse_AIRRseq.conscount_min = 2
 params.First_Alignment_Collapse_AIRRseq.n_max = 10
 params.First_Alignment_Collapse_AIRRseq.name_alignment = "_First_Alignment"
 
-params.First_Alignment_alignment_report_table.name_alignment = "_First_Alignment"
-
-// Process Parameters for ogrdbstats_report_first_alignment:
-params.ogrdbstats_report_first_alignment.chain = params.chain
-
 // Process Parameters for Undocumented_Alleles:
 params.Undocumented_Alleles.chain = "IGH"
 params.Undocumented_Alleles.num_threads = 10
@@ -44,8 +39,6 @@ params.Undocumented_Alleles.min_frac = 0.75
 
 
 // part 3
-
-params.make_igblast_ndm_second_alignment.ndm_chain = params.ndm_chain
 
 // Process Parameters for Second_Alignment_IgBlastn:
 params.Second_Alignment_IgBlastn.num_threads = "10"
@@ -135,8 +128,6 @@ params.TIgGER_bayesian_genotype_Inference_j_call.single_assignments = "true"
 
 
 // part 6
-
-params.make_igblast_ndm_third_alignment.ndm_chain = params.ndm_chain
 
 // Process Parameters for Third_Alignment_IgBlastn:
 params.Third_Alignment_IgBlastn.num_threads = "10"
