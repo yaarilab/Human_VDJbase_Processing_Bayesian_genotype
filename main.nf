@@ -1450,7 +1450,7 @@ input:
 
 output:
  set val("${call}_genotype"),file("${call}_genotype_report.tsv")  into g_29_outputFileTSV0_g_76
- set val("${call}_personal_reference"), file("${call}_personal_reference.fasta")  into g_29_germlineFastaFile1_g_79, g_29_germlineFastaFile1_g_37, g_29_germlineFastaFile1_g_86
+ set val("${call}_personal_reference"), file("${call}_personal_reference.fasta")  into g_29_germlineFastaFile1_g_79, g_29_germlineFastaFile1_g_37, g_29_germlineFastaFile1_g_86, g_29_germlineFastaFile1_g21_22, g_29_germlineFastaFile1_g21_12
 
 script:
 
@@ -1557,6 +1557,31 @@ ndm_file = db_name+".ndm"
 """
 make_igblast_ndm ${germlineFile} ${chain} ${ndm_file}
 """
+
+}
+
+
+process Third_Alignment_V_MakeBlastDb {
+
+input:
+ set val(db_name), file(germlineFile) from g_29_germlineFastaFile1_g21_22
+
+output:
+ file "${db_name}"  into g21_22_germlineDb0_g21_9
+
+script:
+
+if(germlineFile.getName().endsWith("fasta")){
+	"""
+	sed -e '/^>/! s/[.]//g' ${germlineFile} > tmp_germline.fasta
+	mkdir -m777 ${db_name}
+	makeblastdb -parse_seqids -dbtype nucl -in tmp_germline.fasta -out ${db_name}/${db_name}
+	"""
+}else{
+	"""
+	echo something if off
+	"""
+}
 
 }
 
@@ -1830,30 +1855,6 @@ if(germlineFile.getName().endsWith("fasta")){
 }
 
 
-process Third_Alignment_V_MakeBlastDb {
-
-input:
-
-output:
- file "${db_name}"  into g21_22_germlineDb0_g21_9
-
-script:
-
-if(germlineFile.getName().endsWith("fasta")){
-	"""
-	sed -e '/^>/! s/[.]//g' ${germlineFile} > tmp_germline.fasta
-	mkdir -m777 ${db_name}
-	makeblastdb -parse_seqids -dbtype nucl -in tmp_germline.fasta -out ${db_name}/${db_name}
-	"""
-}else{
-	"""
-	echo something if off
-	"""
-}
-
-}
-
-
 process Third_Alignment_IgBlastn {
 
 input:
@@ -1905,6 +1906,7 @@ publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*
 input:
  set val(name),file(fastaFile) from g_80_germlineFastaFile0_g21_12
  set val(name_igblast),file(igblastOut) from g21_9_igblastOut0_g21_12
+ set val(name1), file(v_germline_file) from g_29_germlineFastaFile1_g21_12
  set val(name2), file(d_germline_file) from g_75_germlineFastaFile1_g21_12
  set val(name3), file(j_germline_file) from g_31_germlineFastaFile1_g21_12
 
