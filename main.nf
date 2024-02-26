@@ -1,8 +1,11 @@
 $HOSTNAME = ""
 params.outdir = 'results'  
 
+//* params.nproc =  10  //* @input @description:"number of processes cores to use"
+//* params.chain =  "IGH"  //* @input @description:"chain"
+
 // Process Parameters for First_Alignment_IgBlastn:
-params.First_Alignment_IgBlastn.num_threads = "10"
+params.First_Alignment_IgBlastn.num_threads = params.nproc
 params.First_Alignment_IgBlastn.ig_seqtype = "Ig"
 params.First_Alignment_IgBlastn.outfmt = "MakeDb"
 params.First_Alignment_IgBlastn.num_alignments_V = "10"
@@ -17,16 +20,16 @@ params.First_Alignment_MakeDb.asisid = "false"
 params.First_Alignment_MakeDb.asiscalls = "false"
 params.First_Alignment_MakeDb.inferjunction = "false"
 params.First_Alignment_MakeDb.partial = "false"
-params.First_Alignment_MakeDb.name_alignment = "_First_Alignment"
+params.First_Alignment_MakeDb.name_alignment = "First_Alignment"
 
 // Process Parameters for First_Alignment_Collapse_AIRRseq:
 params.First_Alignment_Collapse_AIRRseq.conscount_min = 2
 params.First_Alignment_Collapse_AIRRseq.n_max = 10
-params.First_Alignment_Collapse_AIRRseq.name_alignment = "_First_Alignment"
+params.First_Alignment_Collapse_AIRRseq.name_alignment = "First_Alignment"
 
 // Process Parameters for Undocumented_Alleles:
-params.Undocumented_Alleles.chain = "IGH"
-params.Undocumented_Alleles.num_threads = 10
+params.Undocumented_Alleles.chain = params.chain
+params.Undocumented_Alleles.num_threads = params.nproc
 params.Undocumented_Alleles.germline_min = 200
 params.Undocumented_Alleles.min_seqs = 50
 params.Undocumented_Alleles.auto_mutrange = "true"
@@ -41,7 +44,7 @@ params.Undocumented_Alleles.min_frac = 0.75
 // part 3
 
 // Process Parameters for Second_Alignment_IgBlastn:
-params.Second_Alignment_IgBlastn.num_threads = "10"
+params.Second_Alignment_IgBlastn.num_threads = params.nproc
 params.Second_Alignment_IgBlastn.ig_seqtype = "Ig"
 params.Second_Alignment_IgBlastn.outfmt = "MakeDb"
 params.Second_Alignment_IgBlastn.num_alignments_V = "10"
@@ -55,13 +58,7 @@ params.Second_Alignment_MakeDb.asisid = "false"
 params.Second_Alignment_MakeDb.asiscalls = "false"
 params.Second_Alignment_MakeDb.inferjunction = "false"
 params.Second_Alignment_MakeDb.partial = "false"
-params.Second_Alignment_MakeDb.name_alignment = "_Second_Alignment"
-
-// Process Parameters for Second_Alignment_Collapse_AIRRseq:
-//params.Second_Alignment_Collapse_AIRRseq.conscount_min = 2
-//params.Second_Alignment_Collapse_AIRRseq.n_max = 10
-//params.Second_Alignment_Collapse_AIRRseq.name_alignment = "_Second_Alignment"
-
+params.Second_Alignment_MakeDb.name_alignment = "Second_Alignment"
 
 // part 4
 
@@ -130,7 +127,7 @@ params.TIgGER_bayesian_genotype_Inference_j_call.single_assignments = "true"
 // part 6
 
 // Process Parameters for Third_Alignment_IgBlastn:
-params.Third_Alignment_IgBlastn.num_threads = "10"
+params.Third_Alignment_IgBlastn.num_threads = params.nproc
 params.Third_Alignment_IgBlastn.ig_seqtype = "Ig"
 params.Third_Alignment_IgBlastn.outfmt = "MakeDb"
 params.Third_Alignment_IgBlastn.num_alignments_V = "10"
@@ -144,19 +141,13 @@ params.Third_Alignment_MakeDb.asisid = "false"
 params.Third_Alignment_MakeDb.asiscalls = "false"
 params.Third_Alignment_MakeDb.inferjunction = "false"
 params.Third_Alignment_MakeDb.partial = "false"
-params.Third_Alignment_MakeDb.name_alignment = "_Finale"
-
-// Process Parameters for Third_Alignment_Collapse_AIRRseq:
-//params.Third_Alignment_Collapse_AIRRseq.conscount_min = 2
-//params.Third_Alignment_Collapse_AIRRseq.n_max = 10
-//params.Third_Alignment_Collapse_AIRRseq.name_alignment = "_Finale"
-
-
+params.Third_Alignment_MakeDb.name_alignment = "Finale"
 
 // part 7
 
 // Process Parameters for ogrdbstats_report:
-params.ogrdbstats_report.chain = params.chain
+params.ogrdbstats_report.chain = params.chain+"V"
+
 
 if (!params.v_germline_file){params.v_germline_file = ""} 
 if (!params.d_germline){params.d_germline = ""} 
@@ -2241,11 +2232,15 @@ outname = airrFile.name.toString().substring(0, airrFile.name.toString().indexOf
 
 """
 
+germline_file_path=\$(realpath ${germline_file})
+
 novel=""
 
 if grep -q "_[A-Z][0-9]" ${v_germline_file}; then
 	grep -A 6 "_[A-Z][0-9]" ${v_germline_file} > novel_sequences.fasta
 	novel=\$(realpath novel_sequences.fasta)
+	diff \$germline_file_path \$novel | grep '^<' | sed 's/^< //' > personal_germline.fasta
+	germline_file_path=\$(realpath personal_germline.fasta)
 	novel="--inf_file \$novel"
 fi
 
@@ -2257,8 +2252,6 @@ if [[ ! "\${var[*]}" =~ "v_call_genotyped" ]]; then
     awk -F'\t' '{col=\$5;gsub("call", "call_genotyped", col); print \$0 "\t" col}' ${airrFile} > ${outname}_genotyped.tsv
     airrfile=${outname}_genotyped.tsv
 fi
-
-germline_file_path=\$(realpath ${germline_file})
 
 airrFile_path=\$(realpath \$airrfile)
 
