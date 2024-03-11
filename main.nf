@@ -3,6 +3,7 @@ params.outdir = 'results'
 
 //* params.nproc =  10  //* @input @description:"number of processes cores to use"
 //* params.chain =  "IGH"  //* @input @description:"chain"
+params.heavy_chain = "yes"
 
 // Process Parameters for First_Alignment_IgBlastn:
 params.First_Alignment_IgBlastn.num_threads = params.nproc
