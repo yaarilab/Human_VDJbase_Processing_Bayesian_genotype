@@ -2202,6 +2202,10 @@ if (endsWith("${d_genotype}", ".tsv")){
 genos[["freq_by_clone"]] <- gsub("NA", "0", genos[["freq_by_clone"]])
 genos[["freq_by_seq"]] <- gsub("NA", "0", genos[["freq_by_seq"]])
 
+// rename the genotyped_allele columns
+new_genotyped_allele_name = "GENOTYPED_ALLELES"
+col_loc = which(names(genos)=='genotyped_alleles')
+names(genos)[col_loc] = new_genotyped_allele_name
 
 
 # write the report
