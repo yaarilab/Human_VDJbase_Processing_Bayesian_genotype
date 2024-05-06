@@ -827,6 +827,7 @@ input:
 
 output:
  set val(name), file("new_V_novel_germline*")  into g_70_germlineFastaFile0_g_29, g_70_germlineFastaFile0_g14_0, g_70_germlineFastaFile0_g14_1, g_70_germlineFastaFile0_g11_22, g_70_germlineFastaFile0_g11_12
+ file "changes.csv" optional true  into g_70_outputFileCSV1_g_89
 
 
 script:
@@ -881,10 +882,27 @@ def dataframe_to_fasta(df, output_file, description_column='Description', defaul
 
     with open(output_file, 'w') as output_handle:
         SeqIO.write(records, output_handle, 'fasta')
+
+def save_changes_to_csv(old_df, new_df, output_file):
+    changes = []
+    for index, (old_row, new_row) in enumerate(zip(old_df.itertuples(), new_df.itertuples()), 1):
+        if old_row.ID != new_row.ID:
+            changes.append({'Row': index, 'Old_ID': old_row.ID, 'New_ID': new_row.ID})
+    
+    changes_df = pd.DataFrame(changes)
+    if not changes_df.empty:
+        changes_df.to_csv(output_file, index=False)
         
 output_file_path = 'new_V_novel_germline.fasta'
 
 dataframe_to_fasta(df, output_file_path)
+
+
+file_path = '${readArray_v_ref}'  # Replace with the actual path
+old_df = fasta_to_dataframe(file_path)
+
+output_csv_file = "changes.csv"
+save_changes_to_csv(old_df, df, output_csv_file)
 
 """
 } else{
@@ -1439,8 +1457,8 @@ input:
  set val(name1), file(germline_file) from g_70_germlineFastaFile0_g_29
 
 output:
- set val("${call}_genotype"),file("${call}_genotype_report.tsv")  into g_29_outputFileTSV0_g_76
- set val("${call}_personal_reference"), file("${call}_personal_reference.fasta")  into g_29_germlineFastaFile1_g_79, g_29_germlineFastaFile1_g_37, g_29_germlineFastaFile1_g_86, g_29_germlineFastaFile1_g21_22, g_29_germlineFastaFile1_g21_12
+ set val("${call}_genotype"),file("${call}_genotype_report.tsv")  into g_29_outputFileTSV0_g_76, g_29_outputFileTSV0_g_89
+ set val("${call}_personal_reference"), file("${call}_personal_reference.fasta")  into g_29_germlineFastaFile1_g_79, g_29_germlineFastaFile1_g_37, g_29_germlineFastaFile1_g_86, g_29_germlineFastaFile1_g_89, g_29_germlineFastaFile1_g21_22, g_29_germlineFastaFile1_g21_12
 
 script:
 
@@ -1901,7 +1919,7 @@ input:
  set val(name3), file(j_germline_file) from g_31_germlineFastaFile1_g21_12
 
 output:
- set val(name_igblast),file("*_db-pass.tsv") optional true  into g21_12_outputFileTSV0_g_76, g21_12_outputFileTSV0_g_37, g21_12_outputFileTSV0_g_86
+ set val(name_igblast),file("*_db-pass.tsv") optional true  into g21_12_outputFileTSV0_g_76, g21_12_outputFileTSV0_g_37, g21_12_outputFileTSV0_g_86, g21_12_outputFileTSV0_g_89
  set val("reference_set"), file("${reference_set}") optional true  into g21_12_germlineFastaFile1_g_37
  set val(name_igblast),file("*_db-fail.tsv") optional true  into g21_12_outputFileTSV22
 
@@ -1955,6 +1973,53 @@ if(igblastOut.getName().endsWith(".out")){
 	
 	"""
 }
+
+}
+
+
+process change_names_back {
+
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /v_call_genotype_report.tsv$/) "genotype_report/$filename"}
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_db-pass.tsv$/) "rearrangements/$filename"}
+input:
+ file csv from g_70_outputFileCSV1_g_89
+ set val(genotype_name),file(genotype_file) from g_29_outputFileTSV0_g_89
+ set val(name1), file(germline_file) from g_29_germlineFastaFile1_g_89
+ set val(name_igblast),file(rep_file) from g21_12_outputFileTSV0_g_89
+
+output:
+ set val("v_call_genotype"),file("v_call_genotype_report.tsv")  into g_89_outputFileTSV00
+ set val("v_call_personal_reference"), file("v_call_personal_reference.fasta")  into g_89_germlineFastaFile11
+ set val(name_igblast),file("*_db-pass.tsv")  into g_89_outputFileTSV22
+
+
+script:
+
+genotype = genotype_file.toString().split(' ')[0]
+germline = germline_file.toString().split(' ')[0]
+rep = rep_file.toString().split(' ')[0]
+changes_csv = csv.toString().split(' ')[0]
+"""
+
+if [ -f $changes_csv ]; then
+
+    # Process changes from CSV and modify TSV files
+    while IFS=, read -r row old_id new_id; do
+        msed -i "s/>${new_id}/>${old_id}/" $genotype
+        sed -i "s/>${new_id}/>${old_id}/" $rep
+    done < $changes_csv
+
+    # Modify the FASTA file
+    while IFS=, read -r row old_id new_id; do
+        # Replace old ID with new ID
+        sed -i "s/>${new_id}/>${old_id}/" $germline
+    done < $changes_csv
+
+else
+    echo "No changes.csv file found."
+fi
+
+"""
 
 }
 
