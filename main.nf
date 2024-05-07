@@ -1976,69 +1976,6 @@ if(igblastOut.getName().endsWith(".out")){
 
 }
 
-
-process change_names_back {
-
-publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /v_call_genotype_report.tsv$/) "genotype_report/$filename"}
-publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_db-pass.tsv$/) "rearrangements/$filename"}
-input:
- file csv from g_70_outputFileCSV1_g_89
- set val(genotype_name),file(genotype_file) from g_29_outputFileTSV0_g_89
- set val(name1), file(germline_file) from g_29_germlineFastaFile1_g_89
- set val(name_igblast),file(rep_file) from g21_12_outputFileTSV0_g_89
-
-output:
- set val("v_call_genotype"),file("v_call_genotype_report.tsv")  into g_89_outputFileTSV00
- set val("v_call_personal_reference"), file("v_call_personal_reference.fasta")  into g_89_germlineFastaFile11
- set val(name_igblast),file("*_db-pass.tsv")  into g_89_outputFileTSV22
-
-
-script:
-
-genotype = genotype_file.toString().split(' ')[0]
-germline = germline_file.toString().split(' ')[0]
-rep = rep_file.toString().split(' ')[0]
-changes_csv = csv.toString().split(' ')[0]
-"""
-
-#!/usr/bin/env Rscript
-
-
-# Check if changes.csv file exists
-if (file.exists("changes.csv")) {
-
-  # Read changes from CSV
-  changes <- read.csv("changes.csv", header = FALSE, col.names = c("row", "old_id", "new_id"))
-
-  # Process changes and modify TSV files
-  for (change in 1:nrow(changes)) {
-    old_id <- changes[old_id,change]
-    new_id <- changes[new_id,change]
-    
-    # Modify genotype file
-    system(paste("sed -i 's/>", new_id, "/>", old_id, "/' ${genotype}", sep = ""))
-    
-    # Modify rep file
-    system(paste("sed -i 's/>", new_id, "/>", old_id, "/' ${rep}", sep = ""))
-  }
-
-  # Modify the FASTA file
-  for (change in 1:nrow(changes)) {
-    old_id <- changes[old_id,change]
-    new_id <- changes[new_id,change]
-    
-    # Replace old ID with new ID in germline file
-    system(paste("sed -i 's/>", new_id, "/>", old_id, "/' ${germline}", sep = ""))
-  }
-
-} else {
-  cat("No changes.csv file found.")
-}
-
-"""
-
-}
-
 g_29_germlineFastaFile1_g_86= g_29_germlineFastaFile1_g_86.ifEmpty([""]) 
 g_31_germlineFastaFile1_g_86= g_31_germlineFastaFile1_g_86.ifEmpty([""]) 
 
@@ -2184,7 +2121,7 @@ input:
  set val(name5),file(j_genotype) from g_31_outputFileTSV0_g_76
 
 output:
- set val(outname),file("${outname}_genotype.tsv") optional true  into g_76_outputFileTSV00
+ set val(outname),file("${outname}_genotype.tsv") optional true  into g_76_outputFileTSV0_g_89
 
 script:
 
@@ -2292,6 +2229,78 @@ names(genos)[col_loc] = new_genotyped_allele_name
 # write the report
 write.table(genos, file = paste0("${outname}","_genotype.tsv"), row.names = F, sep = "\t")
 """
+}
+
+
+process change_names_back {
+
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${genotype}$/) "genotype_report/$filename"}
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${germline}$/) "rearrangements/$filename"}
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${all_genotype}$/) "genotype_report/$filename"}
+input:
+ file csv from g_70_outputFileCSV1_g_89
+ set val(genotype_name),file(genotype_file) from g_29_outputFileTSV0_g_89
+ set val(name1), file(germline_file) from g_29_germlineFastaFile1_g_89
+ set val(name_igblast),file(rep_file) from g21_12_outputFileTSV0_g_89
+ set val(all_genotype_name),file(all_genotype_file) from g_76_outputFileTSV0_g_89
+
+output:
+ set val("${genotype}"),file("${genotype}")  into g_89_outputFileTSV00
+ set val("${rep}"), file("${rep}")  into g_89_germlineFastaFile11
+ set val("${germline}"),file("${germline}")  into g_89_outputFileTSV22
+ set val("${all_genotype}"),file("${all_genotype}")  into g_89_outputFileTSV33
+
+
+script:
+
+genotype = genotype_file.toString().split(' ')[0]
+all_genotype = all_genotype_file.toString().split(' ')[0]
+germline = germline_file.toString().split(' ')[0]
+rep = rep_file.toString().split(' ')[0]
+changes_csv = csv.toString().split(' ')[0]
+
+"""
+
+#!/usr/bin/env Rscript
+
+
+# Check if changes.csv file exists
+if (file.exists("changes.csv")) {
+
+  # Read changes from CSV
+  changes <- read.csv("changes.csv", header = FALSE, col.names = c("row", "old_id", "new_id"))
+
+  # Process changes and modify TSV files
+  for (change in 1:nrow(changes)) {
+  
+  
+    old_id <- changes[change,"old_id"]
+    new_id <- changes[change,"new_id"]
+    
+    asterisk_pos <- gregexpr("*", old_id, fixed = TRUE)[[1]]
+    old_id <- substring(old_id, asterisk_pos[1] + 1)
+    
+    asterisk_pos <- gregexpr("*", new_id, fixed = TRUE)[[1]]
+    new_id <- substring(new_id, asterisk_pos[1] + 1)
+
+    
+    # Modify genotype file
+    system(paste("sed -i 's/", new_id, "/", old_id, "/g' ${genotype}", sep = ""))
+    
+    system(paste("sed -i 's/", new_id, "/", old_id, "/g' ${all_genotype}", sep = ""))
+    
+    system(paste("sed -i 's/", new_id, "/", old_id, "/g' ${rep}", sep = ""))
+    
+    system(paste("sed -i 's/", new_id, "/", old_id, "/g' ${germline}", sep = ""))
+  }
+
+
+} else {
+  cat("No changes.csv file found.")
+}
+
+"""
+
 }
 
 
