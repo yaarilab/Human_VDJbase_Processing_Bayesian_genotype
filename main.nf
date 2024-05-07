@@ -2001,23 +2001,39 @@ rep = rep_file.toString().split(' ')[0]
 changes_csv = csv.toString().split(' ')[0]
 """
 
-if [ -f $changes_csv ]; then
+#!/usr/bin/env Rscript
 
-    # Process changes from CSV and modify TSV files
-    while IFS=, read -r row old_id new_id; do
-        msed -i "s/>${new_id}/>${old_id}/" $genotype
-        sed -i "s/>${new_id}/>${old_id}/" $rep
-    done < $changes_csv
 
-    # Modify the FASTA file
-    while IFS=, read -r row old_id new_id; do
-        # Replace old ID with new ID
-        sed -i "s/>${new_id}/>${old_id}/" $germline
-    done < $changes_csv
+# Check if changes.csv file exists
+if (file.exists("changes.csv")) {
 
-else
-    echo "No changes.csv file found."
-fi
+  # Read changes from CSV
+  changes <- read.csv("changes.csv", header = FALSE, col.names = c("row", "old_id", "new_id"))
+
+  # Process changes and modify TSV files
+  for (change in 1:nrow(changes)) {
+    old_id <- changes[old_id,change]
+    new_id <- changes[new_id,change]
+    
+    # Modify genotype file
+    system(paste("sed -i 's/>", new_id, "/>", old_id, "/' ${genotype}", sep = ""))
+    
+    # Modify rep file
+    system(paste("sed -i 's/>", new_id, "/>", old_id, "/' ${rep}", sep = ""))
+  }
+
+  # Modify the FASTA file
+  for (change in 1:nrow(changes)) {
+    old_id <- changes[old_id,change]
+    new_id <- changes[new_id,change]
+    
+    # Replace old ID with new ID in germline file
+    system(paste("sed -i 's/>", new_id, "/>", old_id, "/' ${germline}", sep = ""))
+  }
+
+} else {
+  cat("No changes.csv file found.")
+}
 
 """
 
