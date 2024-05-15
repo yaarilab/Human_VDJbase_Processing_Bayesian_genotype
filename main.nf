@@ -1458,7 +1458,7 @@ input:
 
 output:
  set val("${call}_genotype"),file("${call}_genotype_report.tsv")  into g_29_outputFileTSV0_g_76, g_29_outputFileTSV0_g_89
- set val("${call}_personal_reference"), file("${call}_personal_reference.fasta")  into g_29_germlineFastaFile1_g_79, g_29_germlineFastaFile1_g_37, g_29_germlineFastaFile1_g_86, g_29_germlineFastaFile1_g_89, g_29_germlineFastaFile1_g21_22, g_29_germlineFastaFile1_g21_12
+ set val("${call}_personal_reference"), file("${call}_personal_reference.fasta")  into g_29_germlineFastaFile1_g_79, g_29_germlineFastaFile1_g_86, g_29_germlineFastaFile1_g_89, g_29_germlineFastaFile1_g21_22, g_29_germlineFastaFile1_g21_12
 
 script:
 
@@ -1919,8 +1919,8 @@ input:
  set val(name3), file(j_germline_file) from g_31_germlineFastaFile1_g21_12
 
 output:
- set val(name_igblast),file("*_db-pass.tsv") optional true  into g21_12_outputFileTSV0_g_76, g21_12_outputFileTSV0_g_37, g21_12_outputFileTSV0_g_86, g21_12_outputFileTSV0_g_89
- set val("reference_set"), file("${reference_set}") optional true  into g21_12_germlineFastaFile1_g_37
+ set val(name_igblast),file("*_db-pass.tsv") optional true  into g21_12_outputFileTSV0_g_76, g21_12_outputFileTSV0_g_86, g21_12_outputFileTSV0_g_89
+ set val("reference_set"), file("${reference_set}") optional true  into g21_12_germlineFastaFile1_g_89
  set val(name_igblast),file("*_db-fail.tsv") optional true  into g21_12_outputFileTSV22
 
 script:
@@ -2167,7 +2167,7 @@ tab_clone_v <- getFreq(data_initial_run, call = "v_call")
 # keep just alleles that passed the genotype
 tab_clone_v <- tab_clone_v[names(tab_freq_v)]
 # read the genotype table
-genoV <- fread("${v_genotype}", data.table = FALSE)
+genoV <- fread("${v_genotype}", data.table = FALSE, colClasses = "character")
 # add information to the genotype table
 genoV <-
   genoV %>% dplyr::group_by(gene) %>% dplyr::mutate(
@@ -2243,12 +2243,14 @@ input:
  set val(name1), file(germline_file) from g_29_germlineFastaFile1_g_89
  set val(name_igblast),file(rep_file) from g21_12_outputFileTSV0_g_89
  set val(all_genotype_name),file(all_genotype_file) from g_76_outputFileTSV0_g_89
+ set val(name2), file(make_db_germline_file) from g21_12_germlineFastaFile1_g_89
 
 output:
  set val("${genotype}"),file("${genotype}")  into g_89_outputFileTSV00
- set val("${rep}"), file("${rep}")  into g_89_germlineFastaFile11
- set val("${germline}"),file("${germline}")  into g_89_outputFileTSV22
+ set val("${rep}"), file("${rep}")  into g_89_germlineFastaFile1_g_37
+ set val("${germline}"),file("${germline}")  into g_89_outputFileTSV2_g_37
  set val("${all_genotype}"),file("${all_genotype}")  into g_89_outputFileTSV33
+ set val("${make_db_germline}"),file("${make_db_germline}")  into g_89_germlineFastaFile4_g_37
 
 
 script:
@@ -2258,6 +2260,7 @@ all_genotype = all_genotype_file.toString().split(' ')[0]
 germline = germline_file.toString().split(' ')[0]
 rep = rep_file.toString().split(' ')[0]
 changes_csv = csv.toString().split(' ')[0]
+make_db_germline = make_db_germline_file.toString().split(' ')[0]
 
 """
 
@@ -2292,6 +2295,10 @@ if (file.exists("changes.csv")) {
     system(paste("sed -i 's/", new_id, "/", old_id, "/g' ${rep}", sep = ""))
     
     system(paste("sed -i 's/", new_id, "/", old_id, "/g' ${germline}", sep = ""))
+    
+    system(paste("sed -i 's/", new_id, "/", old_id, "/g' ${make_db_germline}", sep = ""))
+    
+    
   }
 
 
@@ -2309,9 +2316,9 @@ process ogrdbstats_report {
 publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*pdf$/) "ogrdbstats_third_alignment/$filename"}
 publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*csv$/) "ogrdbstats_third_alignment/$filename"}
 input:
- set val(name),file(airrFile) from g21_12_outputFileTSV0_g_37
- set val(name1), file(germline_file) from g21_12_germlineFastaFile1_g_37
- set val(name2), file(v_germline_file) from g_29_germlineFastaFile1_g_37
+ set val(name),file(airrFile) from g_89_outputFileTSV2_g_37
+ set val(name1), file(germline_file) from g_89_germlineFastaFile4_g_37
+ set val(name2), file(v_germline_file) from g_89_germlineFastaFile1_g_37
 
 output:
  file "*pdf"  into g_37_outputFilePdf00
