@@ -1884,7 +1884,7 @@ writeFasta(germline_db_new, file = paste0("${call}","_personal_reference.fasta")
 g_29_germlineFastaFile1_g_95= g_29_germlineFastaFile1_g_95.ifEmpty([""]) 
 
 
-process change_names_fasta {
+process sec_change_names_fasta {
 
 input:
  set val(name), file(v_ref) from g_29_germlineFastaFile1_g_95
