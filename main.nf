@@ -1890,7 +1890,7 @@ input:
  set val(name), file(v_ref) from g_29_germlineFastaFile1_g_95
 
 output:
- set val(name), file("new_V_novel_germline*")  into g_95_germlineFastaFile0_g_89, g_95_germlineFastaFile0_g21_22, g_95_germlineFastaFile0_g21_12
+ set val(name), file("new_V_novel_germline*")  into g_95_germlineFastaFile0_g21_22, g_95_germlineFastaFile0_g21_12
  file "changes.csv" optional true  into g_95_outputFileCSV1_g_89
 
 
@@ -2129,9 +2129,7 @@ process change_names_back {
 publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${rep}$/) "rearrangements/$filename"}
 input:
  file csv from g_95_outputFileCSV1_g_89
- set val(name_igblast),file(rep_file) from g_76_outputFileTSV0_g_89
  set val(name_igblast),file(rep_file) from g21_12_outputFileTSV0_g_89
- set val(name2), file(rep_germline_file) from g_95_germlineFastaFile0_g_89
  set val(name2), file(rep_germline_file) from g21_12_germlineFastaFile1_g_89
 
 output:
@@ -2187,151 +2185,6 @@ if (file.exists("changes.csv")) {
 
 """
 
-}
-
-g_75_outputFileTSV0_g_76= g_75_outputFileTSV0_g_76.ifEmpty([""]) 
-
-def defaultIfInexistent(varName){
-    try{
-    	println binding.hasVariable(varName)
-        varName.toString()
-        println varName()
-        return varName
-    }catch(ex){
-        return "check"//file("$baseDir/.emptyfiles/NO_FILE_1", hidden:true)
-    }
-}
-
-def bindingVar(varName) {
-    def optVar = binding.hasVariable(varName)//binding.variables.get(varName)
-    println optVar
-    if(optVar) {
-    	println "pass"
-        println optVar
-        //will only run for global var
-    }
-    println "fail"
-    optVar
-}
-process VDJbase_genotype_report {
-
-publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${outname}_genotype.tsv$/) "genotype_report/$filename"}
-input:
- set val(name1),file(initial_run) from g_94_outputFileTSV1_g_76
- set val(name2),file(personal_run) from g_89_outputFileTSV0_g_76
- set val(name3),file(v_genotype) from g_29_outputFileTSV0_g_76
- set val(name4),file(d_genotype) from g_75_outputFileTSV0_g_76
- set val(name5),file(j_genotype) from g_31_outputFileTSV0_g_76
-
-output:
- set val(outname),file("${outname}_genotype.tsv") optional true  into g_76_outputFileTSV0_g_89
-
-script:
-
-outname = initial_run.name.substring(0, initial_run.name.indexOf("_db-pass"))
-
-"""
-#!/usr/bin/env Rscript
-
-library(dplyr)
-library(data.table)
-library(alakazam)
-
-# the function get the alleles calls frequencies
-getFreq <- function(data, call = "v_call"){
-	# get the single assignment frequency of the alleles
-	table(grep(",", data[[call]][data[[call]]!=""], invert = T, value = T))
-}
-
-addFreqInfo <- function(tab, gene, alleles){
-	paste0(tab[paste0(gene, "*", unlist(strsplit(alleles, ',')))], collapse = ";")
-}
-
-## read selected data columns
-
-data_initial_run <- fread("${initial_run}", data.table = FALSE, select = c("sequence_id", "v_call", "d_call", "j_call"))
-data_genotyped <- fread("${personal_run}", data.table = FALSE, select = c("sequence_id", "v_call", "d_call", "j_call"))
-
-## make sure that both datasets have the same sequences. 
-data_initial_run <- data_initial_run[data_initial_run[["sequence_id"]] %in% data_genotyped[["sequence_id"]],]
-data_genotyped <- data_genotyped[data_genotyped[["sequence_id"]] %in% data_initial_run[["sequence_id"]],]
-data_initial_run <- data_initial_run[order(data_initial_run[["sequence_id"]]), ]
-data_genotyped <- data_genotyped[order(data_genotyped[["sequence_id"]]), ]
-
-non_match_v <- which(data_initial_run[["v_call"]]!=data_genotyped[["v_call"]])
-
-data_initial_run[["v_call"]][non_match_v] <- data_genotyped[["v_call"]][non_match_v]
-    
-
-# for the v_calls
-print("v_call_fractions")
-tab_freq_v <- getFreq(data_genotyped, call = "v_call")
-tab_clone_v <- getFreq(data_initial_run, call = "v_call")
-# keep just alleles that passed the genotype
-tab_clone_v <- tab_clone_v[names(tab_freq_v)]
-# read the genotype table
-genoV <- fread("${v_genotype}", data.table = FALSE, colClasses = "character")
-# add information to the genotype table
-genoV <-
-  genoV %>% dplyr::group_by(gene) %>% dplyr::mutate(
-    Freq_by_Clone = addFreqInfo(tab_clone_v, gene, genotyped_alleles),
-    Freq_by_Seq = addFreqInfo(tab_freq_v, gene, genotyped_alleles)
-  )
-
-
-# for the j_calls
-print("j_call_fractions")
-tab_freq_j <- getFreq(data_genotyped, call = "j_call")
-tab_clone_j <- getFreq(data_initial_run, call = "j_call")
-# keep just alleles that passed the genotype
-tab_clone_j <- tab_clone_j[names(tab_freq_j)]
-# read the genotype table
-genoJ <- fread("${j_genotype}", data.table = FALSE, colClasses = "character")
-# add information to the genotype table
-genoJ <-
-  genoJ %>% dplyr::group_by(gene) %>% dplyr::mutate(
-    Freq_by_Clone = addFreqInfo(tab_clone_j, gene, genotyped_alleles),
-    Freq_by_Seq = addFreqInfo(tab_freq_j, gene, genotyped_alleles)
-  )
-  
-# for the d_calls; first check if the genotype file for d exists
-# if("${d_genotype}"=="*tsv")
-if (endsWith("${d_genotype}", ".tsv")){
-	# for the d_calls
-	print("d_call_fractions")
-	tab_freq_d <- getFreq(data_genotyped, call = "d_call")
-	tab_clone_d <- getFreq(data_initial_run, call = "d_call")
-	# keep just alleles that passed the genotype
-	tab_clone_d <- tab_clone_d[names(tab_freq_d)]
-	# read the genotype table
-	genoD <- fread("${d_genotype}", data.table = FALSE, colClasses = "character")
-	# add information to the genotype table
-	print(tab_clone_d)
-	print(tab_freq_d)
-	print(genoD)
-	genoD <-
-	  genoD %>% dplyr::group_by(gene) %>% dplyr::mutate(
-	    Freq_by_Clone = addFreqInfo(tab_clone_d, gene, genotyped_alleles),
-	    Freq_by_Seq = addFreqInfo(tab_freq_d, gene, genotyped_alleles)
-	  )
-	  
-	genos <- plyr::rbind.fill(genoV, genoD, genoJ)
-}else{
-	genos <- plyr::rbind.fill(genoV, genoJ)
-}
-
-genos[["Freq_by_Clone"]] <- gsub("NA", "0", genos[["Freq_by_Clone"]])
-genos[["Freq_by_Seq"]] <- gsub("NA", "0", genos[["Freq_by_Seq"]])
-
-# rename the genotyped_allele columns
-new_genotyped_allele_name = "GENOTYPED_ALLELES"
-col_loc = which(names(genos)=='genotyped_alleles')
-names(genos)[col_loc] = new_genotyped_allele_name
-
-
-# write the report
-write.table(genos, file = paste0("${outname}","_genotype.tsv"), row.names = F, sep = "\t")
-"""
 }
 
 g_29_germlineFastaFile1_g_86= g_29_germlineFastaFile1_g_86.ifEmpty([""]) 
@@ -2499,6 +2352,151 @@ run_ogrdbstats \
 
 """
 
+}
+
+g_75_outputFileTSV0_g_76= g_75_outputFileTSV0_g_76.ifEmpty([""]) 
+
+def defaultIfInexistent(varName){
+    try{
+    	println binding.hasVariable(varName)
+        varName.toString()
+        println varName()
+        return varName
+    }catch(ex){
+        return "check"//file("$baseDir/.emptyfiles/NO_FILE_1", hidden:true)
+    }
+}
+
+def bindingVar(varName) {
+    def optVar = binding.hasVariable(varName)//binding.variables.get(varName)
+    println optVar
+    if(optVar) {
+    	println "pass"
+        println optVar
+        //will only run for global var
+    }
+    println "fail"
+    optVar
+}
+process VDJbase_genotype_report {
+
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${outname}_genotype.tsv$/) "genotype_report/$filename"}
+input:
+ set val(name1),file(initial_run) from g_94_outputFileTSV1_g_76
+ set val(name2),file(personal_run) from g_89_outputFileTSV0_g_76
+ set val(name3),file(v_genotype) from g_29_outputFileTSV0_g_76
+ set val(name4),file(d_genotype) from g_75_outputFileTSV0_g_76
+ set val(name5),file(j_genotype) from g_31_outputFileTSV0_g_76
+
+output:
+ set val(outname),file("${outname}_genotype.tsv") optional true  into g_76_outputFileTSV00
+
+script:
+
+outname = initial_run.name.substring(0, initial_run.name.indexOf("_db-pass"))
+
+"""
+#!/usr/bin/env Rscript
+
+library(dplyr)
+library(data.table)
+library(alakazam)
+
+# the function get the alleles calls frequencies
+getFreq <- function(data, call = "v_call"){
+	# get the single assignment frequency of the alleles
+	table(grep(",", data[[call]][data[[call]]!=""], invert = T, value = T))
+}
+
+addFreqInfo <- function(tab, gene, alleles){
+	paste0(tab[paste0(gene, "*", unlist(strsplit(alleles, ',')))], collapse = ";")
+}
+
+## read selected data columns
+
+data_initial_run <- fread("${initial_run}", data.table = FALSE, select = c("sequence_id", "v_call", "d_call", "j_call"))
+data_genotyped <- fread("${personal_run}", data.table = FALSE, select = c("sequence_id", "v_call", "d_call", "j_call"))
+
+## make sure that both datasets have the same sequences. 
+data_initial_run <- data_initial_run[data_initial_run[["sequence_id"]] %in% data_genotyped[["sequence_id"]],]
+data_genotyped <- data_genotyped[data_genotyped[["sequence_id"]] %in% data_initial_run[["sequence_id"]],]
+data_initial_run <- data_initial_run[order(data_initial_run[["sequence_id"]]), ]
+data_genotyped <- data_genotyped[order(data_genotyped[["sequence_id"]]), ]
+
+non_match_v <- which(data_initial_run[["v_call"]]!=data_genotyped[["v_call"]])
+
+data_initial_run[["v_call"]][non_match_v] <- data_genotyped[["v_call"]][non_match_v]
+    
+
+# for the v_calls
+print("v_call_fractions")
+tab_freq_v <- getFreq(data_genotyped, call = "v_call")
+tab_clone_v <- getFreq(data_initial_run, call = "v_call")
+# keep just alleles that passed the genotype
+tab_clone_v <- tab_clone_v[names(tab_freq_v)]
+# read the genotype table
+genoV <- fread("${v_genotype}", data.table = FALSE, colClasses = "character")
+# add information to the genotype table
+genoV <-
+  genoV %>% dplyr::group_by(gene) %>% dplyr::mutate(
+    Freq_by_Clone = addFreqInfo(tab_clone_v, gene, genotyped_alleles),
+    Freq_by_Seq = addFreqInfo(tab_freq_v, gene, genotyped_alleles)
+  )
+
+
+# for the j_calls
+print("j_call_fractions")
+tab_freq_j <- getFreq(data_genotyped, call = "j_call")
+tab_clone_j <- getFreq(data_initial_run, call = "j_call")
+# keep just alleles that passed the genotype
+tab_clone_j <- tab_clone_j[names(tab_freq_j)]
+# read the genotype table
+genoJ <- fread("${j_genotype}", data.table = FALSE, colClasses = "character")
+# add information to the genotype table
+genoJ <-
+  genoJ %>% dplyr::group_by(gene) %>% dplyr::mutate(
+    Freq_by_Clone = addFreqInfo(tab_clone_j, gene, genotyped_alleles),
+    Freq_by_Seq = addFreqInfo(tab_freq_j, gene, genotyped_alleles)
+  )
+  
+# for the d_calls; first check if the genotype file for d exists
+# if("${d_genotype}"=="*tsv")
+if (endsWith("${d_genotype}", ".tsv")){
+	# for the d_calls
+	print("d_call_fractions")
+	tab_freq_d <- getFreq(data_genotyped, call = "d_call")
+	tab_clone_d <- getFreq(data_initial_run, call = "d_call")
+	# keep just alleles that passed the genotype
+	tab_clone_d <- tab_clone_d[names(tab_freq_d)]
+	# read the genotype table
+	genoD <- fread("${d_genotype}", data.table = FALSE, colClasses = "character")
+	# add information to the genotype table
+	print(tab_clone_d)
+	print(tab_freq_d)
+	print(genoD)
+	genoD <-
+	  genoD %>% dplyr::group_by(gene) %>% dplyr::mutate(
+	    Freq_by_Clone = addFreqInfo(tab_clone_d, gene, genotyped_alleles),
+	    Freq_by_Seq = addFreqInfo(tab_freq_d, gene, genotyped_alleles)
+	  )
+	  
+	genos <- plyr::rbind.fill(genoV, genoD, genoJ)
+}else{
+	genos <- plyr::rbind.fill(genoV, genoJ)
+}
+
+genos[["Freq_by_Clone"]] <- gsub("NA", "0", genos[["Freq_by_Clone"]])
+genos[["Freq_by_Seq"]] <- gsub("NA", "0", genos[["Freq_by_Seq"]])
+
+# rename the genotyped_allele columns
+new_genotyped_allele_name = "GENOTYPED_ALLELES"
+col_loc = which(names(genos)=='genotyped_alleles')
+names(genos)[col_loc] = new_genotyped_allele_name
+
+
+# write the report
+write.table(genos, file = paste0("${outname}","_genotype.tsv"), row.names = F, sep = "\t")
+"""
 }
 
 
