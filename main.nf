@@ -1458,7 +1458,7 @@ input:
  set val(name2),file(clone_rep_file) from g14_9_outputFileTSV0_g_94
 
 output:
- set val("${germline}"),file("${germline}")  into g_94_germlineFastaFile0_g_29, g_94_germlineFastaFile0_g_31
+ set val("${germline}"),file("${germline}")  into g_94_germlineFastaFile0_g_29
  set val("${rep}"), file("${rep}")  into g_94_outputFileTSV1_g_76
  set val("${clone_rep}"), file("${clone_rep}")  into g_94_outputFileTSV2_g_29, g_94_outputFileTSV2_g_31, g_94_outputFileTSV2_g_75
 
@@ -1672,7 +1672,6 @@ publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${
 input:
  set val(name),file(airrFile) from g_94_outputFileTSV2_g_31
  set val(name1), file(germline_file) from g_4_germlineFastaFile_g_31
- set val(name1), file(germline_file) from g_94_germlineFastaFile0_g_31
 
 output:
  set val("${call}_genotype"),file("${call}_genotype_report.tsv")  into g_31_outputFileTSV0_g_76
