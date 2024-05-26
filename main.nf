@@ -1448,6 +1448,8 @@ cat(lines, sep = "\n", file = file_path, append = TRUE)
 """
 }
 
+g14_9_outputFileTSV0_g_94= g14_9_outputFileTSV0_g_94.ifEmpty([""]) 
+
 
 process change_germline_file_and_repertoire_file_names_back {
 
@@ -1460,7 +1462,7 @@ input:
 output:
  set val("${germline}"),file("${germline}")  into g_94_germlineFastaFile0_g_29
  set val("${rep}"), file("${rep}")  into g_94_outputFileTSV1_g_76
- set val("${clone_rep}"), file("${clone_rep}")  into g_94_outputFileTSV2_g_29, g_94_outputFileTSV2_g_31, g_94_outputFileTSV2_g_75
+ set val("${clone_rep}"), file("${clone_rep}") optional true  into g_94_outputFileTSV2_g_29, g_94_outputFileTSV2_g_31, g_94_outputFileTSV2_g_75
 
 
 script:
@@ -2121,6 +2123,8 @@ if(igblastOut.getName().endsWith(".out")){
 }
 
 }
+
+g_95_outputFileCSV1_g_89= g_95_outputFileCSV1_g_89.ifEmpty([""]) 
 
 
 process change_names_back {
