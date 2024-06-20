@@ -2529,20 +2529,20 @@ json_data <- list(
       annotation = list(
         aligner = list(
           tool = "IgBLAST",
-          version = "1.20.0"
+          version = "1.22.0"
         ),
         aligner_reference = list(
-          aligner_reference_v = "GLDB_macaque_asc_ref - version  2023-10-29",
-          aligner_reference_d = "GLDB_macaque_asc_ref - version  2023-10-29",
-          aligner_reference_j = "GLDB_macaque_asc_ref - version  2023-10-29"
+          aligner_reference_v = "${v_germline_name}",
+          aligner_reference_d = "${d_germline_name}",
+          aligner_reference_j = "${j_germline_name}"
         ),
         Genotyper = list(
           Tool = "TIgGER",
-          Version = "1.0.0"
+          Version = "1.1.0"
         ),
         Haplotyper = list(
           Tool = "RAbHIT",
-          Version = "0.2.0"
+          Version = "0.2.4"
         ),
         `Single Assignment` = "true"
       )
