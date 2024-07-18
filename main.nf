@@ -157,9 +157,9 @@ ch_empty_file_1 = file("$baseDir/.emptyfiles/NO_FILE_1", hidden:true)
 ch_empty_file_2 = file("$baseDir/.emptyfiles/NO_FILE_2", hidden:true)
 ch_empty_file_3 = file("$baseDir/.emptyfiles/NO_FILE_3", hidden:true)
 
-Channel.fromPath(params.v_germline_file, type: 'any').map{ file -> tuple(file.baseName, file) }.into{g_2_germlineFastaFile_g_8;g_2_germlineFastaFile_g_73;g_2_germlineFastaFile_g0_22;g_2_germlineFastaFile_g0_12}
-Channel.fromPath(params.d_germline, type: 'any').map{ file -> tuple(file.baseName, file) }.into{g_3_germlineFastaFile_g_75;g_3_germlineFastaFile_g_73;g_3_germlineFastaFile_g14_0;g_3_germlineFastaFile_g14_1;g_3_germlineFastaFile_g0_16;g_3_germlineFastaFile_g0_12;g_3_germlineFastaFile_g11_16;g_3_germlineFastaFile_g11_12}
-Channel.fromPath(params.j_germline, type: 'any').map{ file -> tuple(file.baseName, file) }.into{g_4_germlineFastaFile_g_31;g_4_germlineFastaFile_g_73;g_4_germlineFastaFile_g14_0;g_4_germlineFastaFile_g14_1;g_4_germlineFastaFile_g0_17;g_4_germlineFastaFile_g0_12;g_4_germlineFastaFile_g11_17;g_4_germlineFastaFile_g11_12}
+Channel.fromPath(params.v_germline_file, type: 'any').map{ file -> tuple(file.baseName, file) }.into{g_2_germlineFastaFile_g_8;g_2_germlineFastaFile_g0_22;g_2_germlineFastaFile_g0_12}
+Channel.fromPath(params.d_germline, type: 'any').map{ file -> tuple(file.baseName, file) }.into{g_3_germlineFastaFile_g_75;g_3_germlineFastaFile_g14_0;g_3_germlineFastaFile_g14_1;g_3_germlineFastaFile_g0_16;g_3_germlineFastaFile_g0_12;g_3_germlineFastaFile_g11_16;g_3_germlineFastaFile_g11_12}
+Channel.fromPath(params.j_germline, type: 'any').map{ file -> tuple(file.baseName, file) }.into{g_4_germlineFastaFile_g_31;g_4_germlineFastaFile_g14_0;g_4_germlineFastaFile_g14_1;g_4_germlineFastaFile_g0_17;g_4_germlineFastaFile_g0_12;g_4_germlineFastaFile_g11_17;g_4_germlineFastaFile_g11_12}
 Channel.fromPath(params.airr_seq, type: 'any').map{ file -> tuple(file.baseName, file) }.into{g_44_fastaFile_g_73;g_44_fastaFile_g0_12;g_44_fastaFile_g0_9}
 
 
@@ -786,6 +786,9 @@ if (class(novel) != 'try-error') {
 		}))
 		
 		novel <- novel[!SNP_XXXX, ]
+		
+		# remove duplicated novel alleles
+		novel <- novel[!duplicated(novel[['polymorphism_call']])]
 		
 		# save novel output
 		write.table(
@@ -2191,6 +2194,116 @@ if (file.exists("changes.csv")) {
 
 }
 
+g_29_germlineFastaFile1_g_86= g_29_germlineFastaFile1_g_86.ifEmpty([""]) 
+g_31_germlineFastaFile1_g_86= g_31_germlineFastaFile1_g_86.ifEmpty([""]) 
+
+
+process Haplotype_inference {
+
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_haplotype.tsv$/) "haplotype/$filename"}
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_binomDel.tsv$/) "deletions/$filename"}
+input:
+ set val(name), file(airrFile) from g_89_outputFileTSV0_g_86
+ set val(name1),file(v_germline) from g_29_germlineFastaFile1_g_86
+ set val(name2),file(d_germline) from g_31_germlineFastaFile1_g_86
+
+output:
+ set val(outname), file("*_haplotype.tsv") optional true  into g_86_outputFileTSV00
+ set val(outname), file("*_binomDel.tsv") optional true  into g_86_outputFileTSV11
+
+script:
+
+v_germline = v_germline.name.startsWith('NO_FILE') ? "" : "${v_germline}"
+
+d_germline = d_germline.name.startsWith('NO_FILE') ? "" : "${d_germline}"
+
+outname = airrFile.name.toString().substring(0, airrFile.name.toString().indexOf("_db-pass"))
+	
+	
+"""
+#!/usr/bin/env Rscript
+
+library(tigger)
+library(data.table)
+library(rabhit)
+library(alakazam)
+
+# read the data
+
+data <- fread("${airrFile}", data.table=FALSE)
+
+# read the germline
+v_germline_db <- if("${v_germline}"!="") readIgFasta("${v_germline}") else NA
+d_germline_db <- if("${d_germline}"!="") readIgFasta("${d_germline}") else NA
+
+
+binom_del <-
+       rabhit::deletionsByBinom(data, chain = "IGH")
+       
+# write deletion report
+
+outfile_del = "${outname}_binomDel.tsv"
+
+write.table(binom_del, file = outfile_del, sep = '\t', row.names = F, quote = T)
+
+# haplotype inference
+
+outfile_haplotype = "${outname}_gene-"
+
+genes_haplotype <- c('IGHJ6', 'IGHD2-21', 'IGHD2-8')
+
+for (gene in genes_haplotype) {
+    CALL = paste0(tolower(substr(gene, 4, 4)), "_call")
+
+    
+    
+    if (gene == 'IGHJ6') {
+      CALL = 'j_call'
+      toHap_GERM = c(v_germline_db, d_germline_db)
+      toHap_col = c('v_call', 'd_call')
+    }else{
+    	toHap_GERM = c(v_germline_db)
+    	toHap_col = c('v_call')
+    }
+
+    allele_fractions <-
+      grep(gene, grep(',', data[[CALL]], invert = T, value = T), value = T)
+
+	bool <- sum(table(allele_fractions) / length(allele_fractions) >= 0.3) == 2 && length(names(table(allele_fractions))) >= 2
+
+    if (bool) {
+      names_ <- names(table(allele_fractions)[table(allele_fractions) / length(allele_fractions) >= 0.3])
+      
+      alleles <- paste0(sapply(names_, function(x) strsplit(x, '[*]')[[1]][2]), collapse = '_')
+      
+      haplo <- rabhit::createFullHaplotype(
+        data,
+        toHap_col = toHap_col,
+        hapBy_col = CALL,
+        hapBy = gene,
+        toHap_GERM = toHap_GERM,
+        deleted_genes = binom_del,
+        chain = "IGH"
+      )
+      
+      # paste0(gene, '-', alleles)
+      
+      write.table(
+        haplo,
+        file = paste0(outfile_haplotype, gene, '-', alleles, "_haplotype.tsv"),
+        sep = '\t',
+        row.names = F,
+        quote = T
+      )
+
+    }
+}
+
+
+
+"""
+}
+
 
 process ogrdbstats_report {
 
@@ -2393,125 +2506,12 @@ write.table(genos, file = paste0("${outname}","_genotype.tsv"), row.names = F, s
 """
 }
 
-g_29_germlineFastaFile1_g_86= g_29_germlineFastaFile1_g_86.ifEmpty([""]) 
-g_31_germlineFastaFile1_g_86= g_31_germlineFastaFile1_g_86.ifEmpty([""]) 
-
-
-process Haplotype_inference {
-
-publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_haplotype.tsv$/) "haplotype/$filename"}
-publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_binomDel.tsv$/) "deletions/$filename"}
-input:
- set val(name), file(airrFile) from g_89_outputFileTSV0_g_86
- set val(name1),file(v_germline) from g_29_germlineFastaFile1_g_86
- set val(name2),file(d_germline) from g_31_germlineFastaFile1_g_86
-
-output:
- set val(outname), file("*_haplotype.tsv") optional true  into g_86_outputFileTSV00
- set val(outname), file("*_binomDel.tsv") optional true  into g_86_outputFileTSV11
-
-script:
-
-v_germline = v_germline.name.startsWith('NO_FILE') ? "" : "${v_germline}"
-
-d_germline = d_germline.name.startsWith('NO_FILE') ? "" : "${d_germline}"
-
-outname = airrFile.name.toString().substring(0, airrFile.name.toString().indexOf("_db-pass"))
-	
-	
-"""
-#!/usr/bin/env Rscript
-
-library(tigger)
-library(data.table)
-library(rabhit)
-library(alakazam)
-
-# read the data
-
-data <- fread("${airrFile}", data.table=FALSE)
-
-# read the germline
-v_germline_db <- if("${v_germline}"!="") readIgFasta("${v_germline}") else NA
-d_germline_db <- if("${d_germline}"!="") readIgFasta("${d_germline}") else NA
-
-
-binom_del <-
-       rabhit::deletionsByBinom(data, chain = "IGH")
-       
-# write deletion report
-
-outfile_del = "${outname}_binomDel.tsv"
-
-write.table(binom_del, file = outfile_del, sep = '\t', row.names = F, quote = T)
-
-# haplotype inference
-
-outfile_haplotype = "${outname}_gene-"
-
-genes_haplotype <- c('IGHJ6', 'IGHD2-21', 'IGHD2-8')
-
-for (gene in genes_haplotype) {
-    CALL = paste0(tolower(substr(gene, 4, 4)), "_call")
-
-    
-    
-    if (gene == 'IGHJ6') {
-      CALL = 'j_call'
-      toHap_GERM = c(v_germline_db, d_germline_db)
-      toHap_col = c('v_call', 'd_call')
-    }else{
-    	toHap_GERM = c(v_germline_db)
-    	toHap_col = c('v_call')
-    }
-
-    allele_fractions <-
-      grep(gene, grep(',', data[[CALL]], invert = T, value = T), value = T)
-
-	bool <- sum(table(allele_fractions) / length(allele_fractions) >= 0.3) == 2 && length(names(table(allele_fractions))) >= 2
-
-    if (bool) {
-      names_ <- names(table(allele_fractions)[table(allele_fractions) / length(allele_fractions) >= 0.3])
-      
-      alleles <- paste0(sapply(names_, function(x) strsplit(x, '[*]')[[1]][2]), collapse = '_')
-      
-      haplo <- rabhit::createFullHaplotype(
-        data,
-        toHap_col = toHap_col,
-        hapBy_col = CALL,
-        hapBy = gene,
-        toHap_GERM = toHap_GERM,
-        deleted_genes = binom_del,
-        chain = "IGH"
-      )
-      
-      # paste0(gene, '-', alleles)
-      
-      write.table(
-        haplo,
-        file = paste0(outfile_haplotype, gene, '-', alleles, "_haplotype.tsv"),
-        sep = '\t',
-        row.names = F,
-        quote = T
-      )
-
-    }
-}
-
-
-
-"""
-}
-
 
 process new_meta_fata {
 
 publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*json$/) "meta_data/$filename"}
 input:
  set val(name), file(files) from g_44_fastaFile_g_73
- set val(v_germline_name), file(v_germline_file) from g_2_germlineFastaFile_g_73
- set val(d_germline_name), file(d_germline_file) from g_3_germlineFastaFile_g_73
- set val(j_germline_name), file(j_germline_file) from g_4_germlineFastaFile_g_73
 
 output:
  file "*json"  into g_73_outputFile00
@@ -2532,20 +2532,20 @@ json_data <- list(
       annotation = list(
         aligner = list(
           tool = "IgBLAST",
-          version = "1.22.0"
+          version = "1.20.0"
         ),
         aligner_reference = list(
-          aligner_reference_v = "${v_germline_name}",
-          aligner_reference_d = "${d_germline_name}",
-          aligner_reference_j = "${j_germline_name}"
+          aligner_reference_v = "GLDB_macaque_asc_ref - version  2023-10-29",
+          aligner_reference_d = "GLDB_macaque_asc_ref - version  2023-10-29",
+          aligner_reference_j = "GLDB_macaque_asc_ref - version  2023-10-29"
         ),
         Genotyper = list(
           Tool = "TIgGER",
-          Version = "1.1.0"
+          Version = "1.0.0"
         ),
         Haplotyper = list(
           Tool = "RAbHIT",
-          Version = "0.2.4"
+          Version = "0.2.0"
         ),
         `Single Assignment` = "true"
       )
