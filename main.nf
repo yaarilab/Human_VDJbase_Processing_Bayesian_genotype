@@ -788,7 +788,8 @@ if (class(novel) != 'try-error') {
 		novel <- novel[!SNP_XXXX, ]
 		
 		# remove duplicated novel alleles
-		novel <- novel[!duplicated(novel[['polymorphism_call']])]
+		bool <- !duplicated(novel[['polymorphism_call']])
+		novel <- novel[bool, ]
 		
 		# save novel output
 		write.table(
