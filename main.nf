@@ -2564,19 +2564,6 @@ writeLines(json_string, "annotation_metadata.json")
 }
 
 
-process nextflow_debug {
-
-
-
-script:
-println "Launch Dir: $workflow.launchDir"
-println "Project : $workflow.projectDir"
-println "Git info: $workflow.repository - $workflow.revision [$workflow.commitId]"
-println "Cmd line: $workflow.commandLine"
-println "Manifest's pipeline version: $workflow.manifest.version"
-}
-
-
 workflow.onComplete {
 println "##Pipeline execution summary##"
 println "---------------------------"
