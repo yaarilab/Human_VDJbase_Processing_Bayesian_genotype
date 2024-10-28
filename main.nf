@@ -1535,7 +1535,7 @@ input:
 
 output:
  set val("${call}_genotype"),file("${call}_genotype_report.tsv") optional true  into g_75_outputFileTSV0_g_76
- set val("${call}_personal_reference"), file("${call}_personal_reference.fasta") optional true  into g_75_germlineFastaFile1_g21_16, g_75_germlineFastaFile1_g21_12
+ set val("${call}_personal_reference"), file("${call}_personal_reference.fasta") optional true  into g_75_germlineFastaFile1_g_86, g_75_germlineFastaFile1_g21_16, g_75_germlineFastaFile1_g21_12
  set val("fake"),file("fake*") optional true  into g_75_outputFileTSV22
 
 script:
@@ -1682,7 +1682,7 @@ input:
 
 output:
  set val("${call}_genotype"),file("${call}_genotype_report.tsv")  into g_31_outputFileTSV0_g_76
- set val("${call}_personal_reference"), file("${call}_personal_reference.fasta")  into g_31_germlineFastaFile1_g_86, g_31_germlineFastaFile1_g21_17, g_31_germlineFastaFile1_g21_12
+ set val("${call}_personal_reference"), file("${call}_personal_reference.fasta")  into g_31_germlineFastaFile1_g21_17, g_31_germlineFastaFile1_g21_12
 
 script:
 
@@ -2196,7 +2196,7 @@ if (file.exists("changes.csv")) {
 }
 
 g_29_germlineFastaFile1_g_86= g_29_germlineFastaFile1_g_86.ifEmpty([""]) 
-g_31_germlineFastaFile1_g_86= g_31_germlineFastaFile1_g_86.ifEmpty([""]) 
+g_75_germlineFastaFile1_g_86= g_75_germlineFastaFile1_g_86.ifEmpty([""]) 
 
 
 process Haplotype_inference {
@@ -2206,7 +2206,7 @@ publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*
 input:
  set val(name), file(airrFile) from g_89_outputFileTSV0_g_86
  set val(name1),file(v_germline) from g_29_germlineFastaFile1_g_86
- set val(name2),file(d_germline) from g_31_germlineFastaFile1_g_86
+ set val(name2),file(d_germline) from g_75_germlineFastaFile1_g_86
 
 output:
  set val(outname), file("*_haplotype.tsv") optional true  into g_86_outputFileTSV00
