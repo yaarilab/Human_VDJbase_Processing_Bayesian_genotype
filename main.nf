@@ -2536,9 +2536,9 @@ json_data <- list(
           version = "1.20.0"
         ),
         aligner_reference = list(
-          aligner_reference_v = "GLDB_macaque_asc_ref - version  2023-10-29",
-          aligner_reference_d = "GLDB_macaque_asc_ref - version  2023-10-29",
-          aligner_reference_j = "GLDB_macaque_asc_ref - version  2023-10-29"
+          aligner_reference_v = "OGRDB - veresion revision 8",
+          aligner_reference_d = "OGRDB - veresion revision 8",
+          aligner_reference_j = "OGRDB - veresion revision 8"
         ),
         Genotyper = list(
           Tool = "TIgGER",
