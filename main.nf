@@ -2401,7 +2401,7 @@ output:
 
 script:
 
-outname = initial_run.name.substring(0, initial_run.name.indexOf("_db-pass"))
+outname = initial_run.name.substring(0, initial_run.name.indexOf("_Second_db-pass"))
 
 """
 #!/usr/bin/env Rscript
@@ -2503,7 +2503,7 @@ names(genos)[col_loc] = new_genotyped_allele_name
 
 
 # write the report
-write.table(genos, file = paste0("${outname}","_genotype.tsv"), row.names = F, sep = "\t")
+write.table(genos, file = paste0("${outname}","_Final_genotype.tsv"), row.names = F, sep = "\t")
 """
 }
 
