@@ -2401,7 +2401,7 @@ output:
 
 script:
 
-outname = initial_run.name.substring(0, initial_run.name.indexOf("_Second_db-pass"))
+outname = initial_run.name.substring(0, initial_run.name.indexOf("_db-pass"))
 
 """
 #!/usr/bin/env Rscript
