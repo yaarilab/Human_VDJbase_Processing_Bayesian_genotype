@@ -2397,7 +2397,7 @@ input:
  set val(name5),file(j_genotype) from g_31_outputFileTSV0_g_76
 
 output:
- set val(outname),file("${outname}_genotype.tsv") optional true  into g_76_outputFileTSV00
+ set val(outname),file("${outname}_genotype.tsv")  into g_76_outputFileTSV00
 
 script:
 
