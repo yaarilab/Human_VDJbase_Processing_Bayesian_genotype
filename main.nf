@@ -2388,7 +2388,7 @@ def bindingVar(varName) {
 }
 process VDJbase_genotype_report {
 
-publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${outname}_genotype.tsv$/) "genotype_report/$filename"}
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${outname}_Final_genotype.tsv$/) "genotype_report/$filename"}
 input:
  set val(name1),file(initial_run) from g11_12_outputFileTSV0_g_97
  set val(name2),file(personal_run) from g21_12_outputFileTSV0_g_97
@@ -2397,7 +2397,7 @@ input:
  set val(name5),file(j_genotype) from g_75_outputFileTSV0_g_97
 
 output:
- set val(outname),file("${outname}_genotype.tsv")  into g_97_outputFileTSV00
+ set val(outname),file("${outname}_Final_genotype.tsv")  into g_97_outputFileTSV00
 
 script:
 
