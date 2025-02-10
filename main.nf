@@ -1057,7 +1057,7 @@ input:
  set val(name3), file(j_germline_file) from g_4_germlineFastaFile_g11_12
 
 output:
- set val(name_igblast),file("*_db-pass.tsv") optional true  into g11_12_outputFileTSV0_g_94, g11_12_outputFileTSV0_g14_0, g11_12_outputFileTSV0_g14_9
+ set val(name_igblast),file("*_db-pass.tsv") optional true  into g11_12_outputFileTSV0_g_94, g11_12_outputFileTSV0_g_97, g11_12_outputFileTSV0_g14_0, g11_12_outputFileTSV0_g14_9
  set val("reference_set"), file("${reference_set}") optional true  into g11_12_germlineFastaFile11
  set val(name_igblast),file("*_db-fail.tsv") optional true  into g11_12_outputFileTSV22
 
@@ -1466,7 +1466,7 @@ input:
 
 output:
  set val("${germline}"),file("${germline}")  into g_94_germlineFastaFile0_g_29
- set val("${rep}"), file("${rep}")  into g_94_outputFileTSV1_g_76
+ set val("${rep}"), file("${rep}")  into g_94_outputFileTSV11
  set val("${clone_rep}"), file("${clone_rep}") optional true  into g_94_outputFileTSV2_g_29, g_94_outputFileTSV2_g_31, g_94_outputFileTSV2_g_75
 
 
@@ -1534,7 +1534,7 @@ input:
  set val(name1), file(germline_file) from g_3_germlineFastaFile_g_75
 
 output:
- set val("${call}_genotype"),file("${call}_genotype_report.tsv") optional true  into g_75_outputFileTSV0_g_76
+ set val("${call}_genotype"),file("${call}_genotype_report.tsv") optional true  into g_75_outputFileTSV0_g_97
  set val("${call}_personal_reference"), file("${call}_personal_reference.fasta") optional true  into g_75_germlineFastaFile1_g_86, g_75_germlineFastaFile1_g21_16, g_75_germlineFastaFile1_g21_12
  set val("fake"),file("fake*") optional true  into g_75_outputFileTSV22
 
@@ -1681,7 +1681,7 @@ input:
  set val(name1), file(germline_file) from g_4_germlineFastaFile_g_31
 
 output:
- set val("${call}_genotype"),file("${call}_genotype_report.tsv")  into g_31_outputFileTSV0_g_76
+ set val("${call}_genotype"),file("${call}_genotype_report.tsv")  into g_31_outputFileTSV0_g_97
  set val("${call}_personal_reference"), file("${call}_personal_reference.fasta")  into g_31_germlineFastaFile1_g21_17, g_31_germlineFastaFile1_g21_12
 
 script:
@@ -1801,7 +1801,7 @@ input:
  set val(name1), file(germline_file) from g_94_germlineFastaFile0_g_29
 
 output:
- set val("${call}_genotype"),file("${call}_genotype_report.tsv")  into g_29_outputFileTSV0_g_76
+ set val("${call}_genotype"),file("${call}_genotype_report.tsv")  into g_29_outputFileTSV0_g_97
  set val("${call}_personal_reference"), file("${call}_personal_reference.fasta")  into g_29_germlineFastaFile1_g_95, g_29_germlineFastaFile1_g_37, g_29_germlineFastaFile1_g_86
 
 script:
@@ -2072,7 +2072,7 @@ input:
  set val(name3), file(j_germline_file) from g_31_germlineFastaFile1_g21_12
 
 output:
- set val(name_igblast),file("*_db-pass.tsv") optional true  into g21_12_outputFileTSV0_g_89
+ set val(name_igblast),file("*_db-pass.tsv") optional true  into g21_12_outputFileTSV0_g_89, g21_12_outputFileTSV0_g_97
  set val("reference_set"), file("${reference_set}") optional true  into g21_12_germlineFastaFile1_g_89
  set val(name_igblast),file("*_db-fail.tsv") optional true  into g21_12_outputFileTSV22
 
@@ -2141,7 +2141,7 @@ input:
  set val(name2), file(rep_germline_file) from g21_12_germlineFastaFile1_g_89
 
 output:
- set val("${rep}"), file("${rep}")  into g_89_outputFileTSV0_g_37, g_89_outputFileTSV0_g_86, g_89_outputFileTSV0_g_76
+ set val("${rep}"), file("${rep}")  into g_89_outputFileTSV0_g_37, g_89_outputFileTSV0_g_86
  set val("${rep_germline}"),file("${rep_germline}")  into g_89_germlineFastaFile1_g_37
 
 
@@ -2362,7 +2362,7 @@ run_ogrdbstats \
 
 }
 
-g_75_outputFileTSV0_g_76= g_75_outputFileTSV0_g_76.ifEmpty([""]) 
+g_31_outputFileTSV0_g_97= g_31_outputFileTSV0_g_97.ifEmpty([""]) 
 
 def defaultIfInexistent(varName){
     try{
@@ -2390,14 +2390,14 @@ process VDJbase_genotype_report {
 
 publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${outname}_genotype.tsv$/) "genotype_report/$filename"}
 input:
- set val(name1),file(initial_run) from g_94_outputFileTSV1_g_76
- set val(name2),file(personal_run) from g_89_outputFileTSV0_g_76
- set val(name3),file(v_genotype) from g_29_outputFileTSV0_g_76
- set val(name4),file(d_genotype) from g_75_outputFileTSV0_g_76
- set val(name5),file(j_genotype) from g_31_outputFileTSV0_g_76
+ set val(name1),file(initial_run) from g11_12_outputFileTSV0_g_97
+ set val(name2),file(personal_run) from g21_12_outputFileTSV0_g_97
+ set val(name3),file(v_genotype) from g_29_outputFileTSV0_g_97
+ set val(name4),file(d_genotype) from g_31_outputFileTSV0_g_97
+ set val(name5),file(j_genotype) from g_75_outputFileTSV0_g_97
 
 output:
- set val(outname),file("${outname}_genotype.tsv")  into g_76_outputFileTSV00
+ set val(outname),file("${outname}_genotype.tsv")  into g_97_outputFileTSV00
 
 script:
 
